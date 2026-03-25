@@ -1,0 +1,7 @@
+services:
+  php:
+    build: .
+    volumes:
+      - .:/app
+      - ../payroad-core:/payroad-core
+    working_dir: /app
