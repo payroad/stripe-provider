@@ -32,11 +32,18 @@ use Stripe\StripeClient;
 
 final class StripeCardProvider implements OneStepCardProviderInterface, CapturableCardProviderInterface, TokenizingCardProviderInterface
 {
+    private ?StripeClient $stripeClient = null;
+
     public function __construct(
-        private readonly StripeClient       $stripe,
+        private readonly string             $secretKey,
         private readonly string             $webhookSecret,
         private readonly StripeStatusMapper $mapper = new StripeStatusMapper(),
     ) {}
+
+    private function stripe(): StripeClient
+    {
+        return $this->stripeClient ??= new StripeClient($this->secretKey);
+    }
 
     public function supports(string $providerName): bool
     {
@@ -57,7 +64,7 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
         Money              $amount,
         CardAttemptContext $context,
     ): CardPaymentAttempt {
-        $intent = $this->stripe->paymentIntents->create([
+        $intent = $this->stripe()->paymentIntents->create([
             'amount'         => $amount->getMinorAmount(),
             'currency'       => strtolower($amount->getCurrency()->code),
             'capture_method' => 'automatic',
@@ -85,7 +92,7 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
         Money            $amount,
         string           $providerToken,
     ): CardPaymentAttempt {
-        $intent = $this->stripe->paymentIntents->create([
+        $intent = $this->stripe()->paymentIntents->create([
             'amount'         => $amount->getMinorAmount(),
             'currency'       => strtolower($amount->getCurrency()->code),
             'payment_method' => $providerToken,
@@ -124,7 +131,7 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
             $params['amount_to_capture'] = $amount->getMinorAmount();
         }
 
-        $intent = $this->stripe->paymentIntents->capture($providerReference, $params);
+        $intent = $this->stripe()->paymentIntents->capture($providerReference, $params);
 
         return new CaptureResult(
             newStatus:      $intent->status === 'succeeded'
@@ -136,7 +143,7 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
 
     public function voidAttempt(string $providerReference): VoidResult
     {
-        $intent = $this->stripe->paymentIntents->cancel($providerReference);
+        $intent = $this->stripe()->paymentIntents->cancel($providerReference);
 
         return new VoidResult(
             newStatus:      AttemptStatus::CANCELED,
@@ -164,7 +171,7 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
             $params['reason'] = $context->reason;
         }
 
-        $refund = $this->stripe->refunds->create($params);
+        $refund = $this->stripe()->refunds->create($params);
 
         $data       = new StripeCardRefundData(
             reason:                  $refund->reason,
@@ -183,7 +190,7 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
         CustomerId           $customerId,
         string               $originalProviderReference,
     ): CardSavedPaymentMethod {
-        $intent = $this->stripe->paymentIntents->retrieve(
+        $intent = $this->stripe()->paymentIntents->retrieve(
             $originalProviderReference,
             ['expand' => ['payment_method']],
         );
