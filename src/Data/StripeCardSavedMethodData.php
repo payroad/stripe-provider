@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Payroad\Provider\Stripe\Data;
 
-use Payroad\Domain\PaymentFlow\Card\CardSavedPaymentMethodData;
+use Payroad\Domain\Channel\Card\CardSavedPaymentMethodData;
 
 final readonly class StripeCardSavedMethodData implements CardSavedPaymentMethodData
 {

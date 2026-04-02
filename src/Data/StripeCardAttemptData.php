@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Payroad\Provider\Stripe\Data;
 
-use Payroad\Domain\PaymentFlow\Card\CardAttemptData;
-use Payroad\Domain\PaymentFlow\Card\ThreeDSData;
+use Payroad\Domain\Channel\Card\CardAttemptData;
+use Payroad\Domain\Channel\Card\ThreeDSData;
 
 final class StripeCardAttemptData implements CardAttemptData
 {
