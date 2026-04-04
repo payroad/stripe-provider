@@ -64,15 +64,18 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
         Money              $amount,
         CardAttemptContext $context,
     ): CardPaymentAttempt {
-        $intent = $this->stripe()->paymentIntents->create([
-            'amount'         => $amount->getMinorAmount(),
-            'currency'       => strtolower($amount->getCurrency()->code),
-            'capture_method' => 'automatic',
-            'metadata'       => [
-                'payroad_attempt_id' => (string) $id,
-                'payroad_payment_id' => (string) $paymentId,
+        $intent = $this->stripe()->paymentIntents->create(
+            [
+                'amount'         => $amount->getMinorAmount(),
+                'currency'       => strtolower($amount->getCurrency()->code),
+                'capture_method' => 'automatic',
+                'metadata'       => [
+                    'payroad_attempt_id' => (string) $id,
+                    'payroad_payment_id' => (string) $paymentId,
+                ],
             ],
-        ]);
+            ['idempotency_key' => (string) $id],
+        );
 
         $data    = new StripeCardAttemptData(clientSecret: $intent->client_secret);
         $attempt = CardPaymentAttempt::create($id, $paymentId, $providerName, $amount, $data);
@@ -92,17 +95,20 @@ final class StripeCardProvider implements OneStepCardProviderInterface, Capturab
         Money            $amount,
         string           $providerToken,
     ): CardPaymentAttempt {
-        $intent = $this->stripe()->paymentIntents->create([
-            'amount'         => $amount->getMinorAmount(),
-            'currency'       => strtolower($amount->getCurrency()->code),
-            'payment_method' => $providerToken,
-            'confirm'        => true,
-            'off_session'    => true,
-            'metadata'       => [
-                'payroad_attempt_id' => (string) $id,
-                'payroad_payment_id' => (string) $paymentId,
+        $intent = $this->stripe()->paymentIntents->create(
+            [
+                'amount'         => $amount->getMinorAmount(),
+                'currency'       => strtolower($amount->getCurrency()->code),
+                'payment_method' => $providerToken,
+                'confirm'        => true,
+                'off_session'    => true,
+                'metadata'       => [
+                    'payroad_attempt_id' => (string) $id,
+                    'payroad_payment_id' => (string) $paymentId,
+                ],
             ],
-        ]);
+            ['idempotency_key' => (string) $id],
+        );
 
         $card = $intent->payment_method?->card;
         $data = new StripeCardAttemptData(
